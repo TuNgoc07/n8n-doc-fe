@@ -25,7 +25,7 @@ const DashboardPage = () => {
           subtitleColor="#fa6238"
         />
         <StatCard
-          title="Quy trình đang chạy"
+          title="Quy trình đang chạyyy"
           value="23"
           subtitle="+1.5% so với tuần trước"
           subtitleColor="#0bda5e"
