@@ -1,5 +1,7 @@
 // src/App.jsx
 import React, { useState } from "react";
+import { useAuth } from "./components/AuthProvider";
+import LoginPage from "./pages/LoginPage";
 import NavigationLayout from "./components/NavigationLayout";
 import DashboardPage from "./pages/DashboardPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
@@ -10,6 +12,7 @@ import WorkflowBuilderPage from "./pages/WorkflowBuilderPage";
 import JobDetailPage from "./pages/JobDetailPage";
 
 export default function App() {
+  const { user, loading, logout } = useAuth();
   const [activeMenu, setActiveMenu] = useState("dashboard");
   // 'recruitmentList' | 'jobDetail'
   const [activePage, setActivePage] = useState("recruitmentList");
@@ -45,12 +48,30 @@ export default function App() {
     }
   };
 
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Đang tải...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
   return (
     <NavigationLayout
       title={getTitle()}
       active={activeMenu}
       onNavChange={handleNavChange}
     >
+      {/* Đăng xuất */}
+      <div style={{ position: "fixed", top: 12, right: 12 }}>
+        <button onClick={logout} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", background: "#fff" }}>
+          Đăng xuất
+        </button>
+      </div>
       {activeMenu === "dashboard" && <DashboardPage />}
 
       {activeMenu === "recruitment" &&
