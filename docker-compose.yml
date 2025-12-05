@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: n8n-doc-fe-app
+    ports:
+      - "8081:80"
+    restart: unless-stopped

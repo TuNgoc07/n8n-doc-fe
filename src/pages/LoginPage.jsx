@@ -36,7 +36,7 @@ export default function LoginPage() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder="you@examplehehe.com"
           required
           style={{ width: "100%", padding: "10px 12px", marginTop: 6, marginBottom: 12, borderRadius: 8, border: "1px solid #ddd" }}
         />
