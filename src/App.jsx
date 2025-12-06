@@ -10,12 +10,22 @@ import SchedulePage from "./pages/SchedulePage";
 import AdminUsersPage from "./pages/UserAdministrationPage";
 import WorkflowBuilderPage from "./pages/WorkflowBuilderPage";
 import JobDetailPage from "./pages/JobDetailPage";
+import ApplyJobsPage from "./pages/ApplyJobsPage";
 
 export default function App() {
   const { user, loading, logout } = useAuth();
   const [activeMenu, setActiveMenu] = useState("dashboard");
   // 'recruitmentList' | 'jobDetail'
   const [activePage, setActivePage] = useState("recruitmentList");
+
+  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  const isPureUser = roles.includes("USER") && !roles.includes("ADMIN") && !roles.includes("EMPLOYEE");
+
+  React.useEffect(() => {
+    if (user && isPureUser) {
+      setActiveMenu("applyJobs");
+    }
+  }, [user, isPureUser]);
 
   const handleNavChange = (menuKey) => {
     setActiveMenu(menuKey);
@@ -27,6 +37,7 @@ export default function App() {
   };
 
   const getTitle = () => {
+    if (isPureUser) return "Ứng tuyển vị trí";
     switch (activeMenu) {
       case "recruitment":
         return activePage === "jobDetail"
@@ -56,39 +67,39 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return <LoginPage />;
-  }
-
   return (
     <NavigationLayout
       title={getTitle()}
       active={activeMenu}
       onNavChange={handleNavChange}
+      user={user}
+      onLogout={logout}
     >
-      {/* Đăng xuất */}
-      <div style={{ position: "fixed", top: 12, right: 12 }}>
-        <button onClick={logout} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", background: "#fff" }}>
-          Đăng xuất
-        </button>
-      </div>
-      {activeMenu === "dashboard" && <DashboardPage />}
+      {!user ? (
+        <LoginPage />
+      ) : (
+        <>
+          {!isPureUser && activeMenu === "dashboard" && <DashboardPage />}
 
-      {activeMenu === "recruitment" &&
-        (activePage === "recruitmentList" ? (
-          <RecruitmentPage onEditJob={() => setActivePage("jobDetail")} />
-        ) : (
-          <JobDetailPage />
-        ))}
+          {!isPureUser && activeMenu === "recruitment" &&
+            (activePage === "recruitmentList" ? (
+              <RecruitmentPage onEditJob={() => setActivePage("jobDetail")} />
+            ) : (
+              <JobDetailPage />
+            ))}
 
-      {activeMenu === "candidates" && <CandidatesPage />}
-      {activeMenu === "schedule" && <SchedulePage />}
-      {activeMenu === "adminUsers" && <AdminUsersPage />}
-      {activeMenu === "workflow" && <WorkflowBuilderPage />}
+          {activeMenu === "applyJobs" && <ApplyJobsPage />}
 
-      {/* Sau này có thể thêm:
-          {activeMenu === "documents" && <DocumentsPage />}
-      */}
+          {!isPureUser && activeMenu === "candidates" && <CandidatesPage />}
+          {!isPureUser && activeMenu === "schedule" && <SchedulePage />}
+          {!isPureUser && activeMenu === "adminUsers" && <AdminUsersPage />}
+          {!isPureUser && activeMenu === "workflow" && <WorkflowBuilderPage />}
+
+          {/* Sau này có thể thêm:
+              {activeMenu === "documents" && <DocumentsPage />}
+          */}
+        </>
+      )}
     </NavigationLayout>
   );
 }

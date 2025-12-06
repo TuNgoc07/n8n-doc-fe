@@ -6,16 +6,26 @@ const NavigationLayout = ({
   active = "dashboard",
   onNavChange,
   children,
+  user,
+  onLogout,
+  onLoginClick,
 }) => {
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: "dashboard" },
-    { id: "recruitment", label: "Tuyển dụng", icon: "work" },
-    { id: "workflow", label: "Quy trình", icon: "account_tree" },
-    { id: "candidates", label: "Ứng viên & Tài liệu", icon: "group" },
-    { id: "schedule", label: "Lịch trình", icon: "calendar_month" },
-    { id: "adminUsers", label: "Quản trị hệ thống", icon: "settings" }, // <- thêm
+  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  const isPureUser = roles.includes("USER") && !roles.includes("ADMIN") && !roles.includes("EMPLOYEE");
 
-  ];
+  const navItems = isPureUser
+    ? [
+        { id: "applyJobs", label: "Ứng tuyển", icon: "description" },
+      ]
+    : [
+        { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+        { id: "applyJobs", label: "Ứng tuyển", icon: "description" },
+        { id: "recruitment", label: "Tuyển dụng", icon: "work" },
+        { id: "workflow", label: "Quy trình", icon: "account_tree" },
+        { id: "candidates", label: "Ứng viên & Tài liệu", icon: "group" },
+        { id: "schedule", label: "Lịch trình", icon: "calendar_month" },
+        { id: "adminUsers", label: "Quản trị hệ thống", icon: "settings" },
+      ];
 
   const handleNavClick = (id) => (e) => {
     e.preventDefault();
@@ -124,18 +134,37 @@ const NavigationLayout = ({
               <button className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-[#282e39] text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
                 <span className="material-symbols-outlined">notifications</span>
               </button>
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-                data-alt="User Avatar"
-                style={{
-                  backgroundImage:
-                    'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCeZjHcDmIulBLKDko3HB-WRU90LhzY1j6GPlU4NAeyecXkTuD3yO_yozCChGjyHvqNSnAtJATHBBl5uBPiwQBzNEJtWLx6NX2gF2urb7akZPp_tXkBiszR5MjG2sux9ZOsURfRyFAqxPwK3yNu5lrTuaKLnQD-VQNwus0cQz3LvBt1KfovqsFlZ6-GyNhj2d0jzNmKeRTMs-K5KU5WgQOqDyYe0EJZvvDKrfgdneHHfJrmNwQC4R-6_rLCIQEZF5HQeN2bQNdeQ88")',
-                }}
-              />
-              <button className="flex items-center justify-center gap-2 px-4 h-10 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors">
-                <span className="material-symbols-outlined">login</span>
-                <span>Login</span>
-              </button>
+
+              {user ? (
+                <>
+                  <div
+                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+                    data-alt="User Avatar"
+                    style={{
+                      backgroundImage:
+                        'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCeZjHcDmIulBLKDko3HB-WRU90LhzY1j6GPlU4NAeyecXkTuD3yO_yozCChGjyHvqNSnAtJATHBBl5uBPiwQBzNEJtWLx6NX2gF2urb7akZPp_tXkBiszR5MjG2sux9ZOsURfRyFAqxPwK3yNu5lrTuaKLnQD-VQNwus0cQz3LvBt1KfovqsFlZ6-GyNhj2d0jzNmKeRTMs-K5KU5WgQOqDyYe0EJZvvDKrfgdneHHfJrmNwQC4R-6_rLCIQEZF5HQeN2bQNdeQ88")',
+                    }}
+                  />
+                  <div className="text-white text-sm">
+                    {user.fullName || user.email}
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    className="flex items-center justify-center gap-2 px-4 h-10 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                    <span>Đăng xuất</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={onLoginClick}
+                  className="flex items-center justify-center gap-2 px-4 h-10 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors"
+                >
+                  <span className="material-symbols-outlined">login</span>
+                  <span>Đăng nhập</span>
+                </button>
+              )}
             </div>
           </header>
 

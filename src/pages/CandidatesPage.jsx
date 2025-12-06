@@ -1,7 +1,55 @@
 // src/pages/CandidatesPage.jsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { api } from "../services/api";
 
 const CandidatesPage = () => {
+  const [apps, setApps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const viewCv = async (id) => {
+    try {
+      const blob = await api.downloadApplicationBlob(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+    } catch (e) {
+      alert(e.message || "Không xem được CV");
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    api
+      .listApplicationsAdmin()
+      .then((data) => {
+        if (!mounted) return;
+        setApps(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setError(err?.message || "Không tải được danh sách ứng viên");
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = (query || "").toLowerCase().trim();
+    if (!q) return apps;
+    return apps.filter((a) =>
+      [a?.applicant?.fullName, a?.applicant?.email, a?.job?.title]
+        .filter(Boolean)
+        .some((s) => String(s).toLowerCase().includes(q))
+    );
+  }, [apps, query]);
+
   return (
     <>
       {/* Page Heading */}
@@ -34,7 +82,8 @@ const CandidatesPage = () => {
               <input
                 className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary h-full placeholder:text-gray-500 dark:placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
                 placeholder="Tìm kiếm theo tên, email, hoặc từ khóa..."
-                defaultValue=""
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
           </label>
@@ -107,53 +156,63 @@ const CandidatesPage = () => {
           </thead>
 
           <tbody>
-            <CandidateRow
-              checkboxId="checkbox-table-1"
-              avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBe9Wg80SdCHYIQdFOIOtO0Zj5tP8NHGNAYqbetyMuEvoz8HvyunKCJLkAlvVPt6IWHOvW5vrYWjAINCYUAIcl4unkgLgaAR797RxA_VU1XDfKbvoozGd4tJdRsrPmphdlIJH_u1_zC10jjdTff4LKlJde7bYz2PzZu5p6F-phXU_JlnRPUhjEE1fttxn3XWOmzMwbtdHkpZyp0WuL9LrK8xiZYURh1C7V-5dW5qNVNn2cuj9W0LqaH5MxDck54-BFesg9O-F_4XKg"
-              name="Lê Minh Anh"
-              email="minhanh.le@email.com"
-              position="Senior UI/UX Designer"
-              date="25/07/2024"
-              files="2 files"
-              statusLabel="Mới"
-              statusClass="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-            />
-
-            <CandidateRow
-              checkboxId="checkbox-table-2"
-              avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuDkvZyWNu_TUyg4PnKHdk1Julz-fk4aqVJ9aOYHdCU2ga9ePu4VCMVxk5tEfMMRWGkBiavqEhiqGdpAjtm62Q4FTvXRRaWGhuDM8kBdM7NjmJsO8H6E3giGdRfeux2DqkbFyqty-PNues5gGrpH9YFGGnPiHt1I9aP3HEGuQxugr8-NTtA8nI7rbUGF8Mqxxi1g9SvQYnMAbTjEkczJ1rr9OYW18tnzDYeTeC6wdXpBGHgKZzZuj5veMps2Vxmn-8nDYcOwCKg1wTM"
-              name="Trần Văn Hùng"
-              email="hung.tran@email.com"
-              position="Backend Developer (Go)"
-              date="24/07/2024"
-              files="1 file"
-              statusLabel="Đang xem xét"
-              statusClass="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-            />
-
-            <CandidateRow
-              checkboxId="checkbox-table-3"
-              avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuAG3UvR8fPyEQXRM7fu3L_gQhdDUn3SnMyJKOA_jA38r03T_Iy7FoZKNQvpi5KtmHJUuSJ-oxnpl-CWdlhVN8qrtGvnfLPiQIG4TQbQyqEB1lNvPIUrog2tFlfQEBOxMuapGa0TJlnUTyRYlAUJ_SPuIjcp7fvlO8sW1kT-e3Ezz1vtsEWh41KT1LcgMSlUBKFW8qV0P6O5E7mBEyjoqY0SWD3WsliWf9CghUpl2Mew6YHMNuKD5xCJq2-9K24_S21hglduFlcib7s"
-              name="Phạm Thị Thu Thảo"
-              email="thao.pham@email.com"
-              position="Product Manager"
-              date="23/07/2024"
-              files="3 files"
-              statusLabel="Phỏng vấn V1"
-              statusClass="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-            />
-
-            <CandidateRow
-              checkboxId="checkbox-table-4"
-              avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuC4EqJhVhZbofcxulhgRx5XMnC21a4uAajnT1L98RhFbYODoDfKLrQio5Fnk07wJP87u564eTgYPVhHLaqjDnfqlSzGQiUZW7AH9t65YsvmzIdXm5aWtOnpDZ903Dqph3Mwtyu6TgI1AG8gpxMcwnRBMJX45ReSKcuVVUKoDcs9LNwH13yki0iUtoHTL83Wle3o732uR73FCURopd7HOT5EtQ0JxOEuLRBX7J3GIs4ozlObvbeuBQlfSGiFwkvn-Om8ST_tuDRKXCM"
-              name="Nguyễn Hoàng Yến"
-              email="yen.nguyen@email.com"
-              position="Senior UI/UX Designer"
-              date="22/07/2024"
-              files="2 files"
-              statusLabel="Từ chối"
-              statusClass="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-            />
+            {loading && (
+              <tr>
+                <td colSpan={7} className="px-6 py-3">Đang tải...</td>
+              </tr>
+            )}
+            {error && !loading && (
+              <tr>
+                <td colSpan={7} className="px-6 py-3 text-red-600">{error}</td>
+              </tr>
+            )}
+            {!loading && !error && filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-6 py-3">Không có dữ liệu</td>
+              </tr>
+            )}
+            {!loading && !error && filtered.map((a) => (
+              <tr key={a.id} className="bg-white dark:bg-[#1a2233] border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td className="w-4 p-4">
+                  <div className="flex items-center">
+                    <input type="checkbox" className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-600 dark:border-gray-500" />
+                  </div>
+                </td>
+                <th scope="row" className="flex items-center px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white">
+                  <div className="w-10 h-10 rounded-full bg-gray-300" />
+                  <div className="pl-3">
+                    <div className="text-base font-semibold">{a.applicant?.fullName || a.applicant?.email}</div>
+                    <div className="font-normal text-gray-500 dark:text-gray-400">{a.applicant?.email}</div>
+                  </div>
+                </th>
+                <td className="px-6 py-4">{a.job?.title}</td>
+                <td className="px-6 py-4">{a.createdAt}</td>
+                <td className="px-6 py-4">
+                  <button
+                    onClick={() => viewCv(a.id)}
+                    className="flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>attach_file</span>
+                    <span>CV (PDF)</span>
+                  </button>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                    {a.status || "Mới"}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => viewCv(a.id)}
+                      className="px-3 py-1 rounded-lg bg-[#282e39] hover:bg-[#3a4152] text-white"
+                    >
+                      Xem CV
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 

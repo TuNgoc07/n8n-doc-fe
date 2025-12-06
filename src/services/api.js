@@ -1,5 +1,5 @@
 // Simple API client for frontend-only auth flow
-const API_BASE = import.meta.env.VITE_API_URL || "https://api.n8n-group2.online";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 function getToken() {
   return localStorage.getItem("auth_token") || null;
@@ -40,6 +40,21 @@ async function request(path, options = {}) {
 export const api = {
   setToken,
   getToken,
+  async listJobs() {
+    return request("/jobs", { method: "GET" });
+  },
+  async listJobsWithCount() {
+    return request("/jobs/with-count", { method: "GET" });
+  },
+  async getJob(id) {
+    return request(`/jobs/${id}`, { method: "GET" });
+  },
+  async updateJob(id, payload) {
+    return request(`/jobs/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
   async login(email, password) {
     return request("/auth/login", {
       method: "POST",
@@ -49,7 +64,47 @@ export const api = {
   async me() {
     return request("/auth/me", { method: "GET" });
   },
+  async listApplicationsAdmin() {
+    return request("/applications", { method: "GET" });
+  },
+  applicationDownloadUrl(id) {
+    return `${API_BASE}/applications/${id}/download`;
+  },
+  async downloadApplicationBlob(id) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/applications/${id}/download`, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || res.statusText);
+    }
+    return res.blob();
+  },
+  async submitApplication(jobId, notes, file) {
+    const token = getToken();
+    const form = new FormData();
+    form.append("jobId", jobId);
+    if (notes != null) form.append("notes", notes);
+    form.append("file", file);
+    const res = await fetch(`${API_BASE}/applications`, {
+      method: "POST",
+      body: form,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || res.statusText);
+    }
+    return res.json();
+  },
   async logout() {
+    try {
+      await request("/auth/logout", { method: "POST" });
+    } catch (_) {}
     setToken(null);
   },
 };
