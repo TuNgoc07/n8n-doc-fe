@@ -1,5 +1,9 @@
 // Simple API client for frontend-only auth flow
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+// Simple API client for frontend-only auth flow
+// src/services/api.js - normalise API base so it works with many env formats
+const rawBase = import.meta.env.VITE_API_URL || "/api";
+const normalized = String(rawBase).replace(/\/+$/, ""); // remove trailing slash(es)
+const API_BASE = normalized === "" ? "/api" : (normalized.endsWith("/api") ? normalized : `${normalized}/api`);
 
 function getToken() {
   return localStorage.getItem("auth_token") || null;
@@ -21,7 +25,7 @@ async function request(path, options = {}) {
     ...options,
     headers,
     // Include cookies if backend uses cookie-based session auth
-    credentials: "include",
+    credentials: "omit",
   });
 
   if (!res.ok) {
@@ -75,7 +79,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/applications/${id}/download`, {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      credentials: "include",
+      credentials: "omit",
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -93,7 +97,7 @@ export const api = {
       method: "POST",
       body: form,
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      credentials: "include",
+      credentials: "omit",
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");

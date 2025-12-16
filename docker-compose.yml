@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   frontend:
@@ -6,8 +6,17 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: /api
+        VITE_API_URL: /api  # có thể đổi thành full URL nếu muốn
+    image: n8n-doc-fe:latest
     container_name: n8n-doc-fe-app
     ports:
       - "8081:80"
+    env_file:
+      - .env.production
     restart: unless-stopped
+    networks:
+      - n8n-net
+
+networks:
+  n8n-net:
+    driver: bridge
