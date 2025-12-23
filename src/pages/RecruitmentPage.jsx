@@ -15,6 +15,7 @@ const RecruitmentPage = ({ onEditJob }) => {
     id: null,
     title: "",
     description: "",
+    requirement: "",
     location: "",
     department: "",
     active: true,
@@ -277,6 +278,15 @@ const RecruitmentPage = ({ onEditJob }) => {
                   className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
                   value={editData.description}
                   onChange={(e) => setEditData((d) => ({ ...d, description: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Yêu cầu (Requirement)</label>
+                <textarea
+                  rows={4}
+                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
+                  value={editData.requirement}
+                  onChange={(e) => setEditData((d) => ({ ...d, requirement: e.target.value }))}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

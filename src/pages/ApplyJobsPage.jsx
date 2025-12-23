@@ -136,6 +136,20 @@ export default function ApplyJobsPage() {
               Phòng ban: {selectedJob.department} • Địa điểm: {selectedJob.location}
             </div>
 
+            {selectedJob.description && (
+              <div className="mb-4 text-sm text-gray-300">
+                <strong>Mô tả công việc:</strong>
+                <p className="whitespace-pre-wrap mt-1">{selectedJob.description}</p>
+              </div>
+            )}
+
+            {selectedJob.requirement && (
+              <div className="mb-4 p-3 rounded-lg bg-[#282e39] text-sm text-gray-300">
+                <strong>Yêu cầu công việc:</strong>
+                <p className="whitespace-pre-wrap mt-1">{selectedJob.requirement}</p>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-1">Ghi chú (tuỳ chọn)</label>
