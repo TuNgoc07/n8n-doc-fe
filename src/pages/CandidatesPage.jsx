@@ -61,7 +61,14 @@ const CandidatesPage = () => {
       setAssignModalOpen(false);
       loadData(); // Reload data to update UI
     } catch (e) {
-      alert(e.message || "Lỗi phân công");
+      console.error("Assign error:", e);
+      let msg = e.message || "Lỗi phân công";
+      try {
+          // Thử parse nếu là JSON string
+          const json = JSON.parse(msg);
+          if (json.message) msg = json.message;
+      } catch {}
+      alert("Lỗi: " + msg);
     }
   };
 
@@ -344,6 +351,11 @@ const CandidatesPage = () => {
                 <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                   Chọn nhân viên phụ trách
                 </label>
+                {employees.length === 0 ? (
+                  <p className="text-sm text-red-500">
+                     Hiện tại chưa có tài khoản nhân viên nào (Role: EMPLOYEE).
+                  </p>
+                ) : (
                 <select
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
                   value={selectedEmployee}
@@ -356,6 +368,7 @@ const CandidatesPage = () => {
                     </option>
                   ))}
                 </select>
+                )}
               </div>
               <div className="flex justify-end gap-2">
                 <button

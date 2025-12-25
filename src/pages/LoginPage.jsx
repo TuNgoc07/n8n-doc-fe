@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../components/AuthProvider";
 
-export default function LoginPage() {
+export default function LoginPage({ onSwitchToRegister }) {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,6 +59,17 @@ export default function LoginPage() {
         >
           {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
+        
+        <div style={{ marginTop: 16, textAlign: "center", fontSize: "0.875rem", color: "#64748b" }}>
+          Chưa có tài khoản?{" "}
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            style={{ color: "#2563eb", fontWeight: 600, border: "none", background: "none", cursor: "pointer" }}
+          >
+            Đăng ký ngay
+          </button>
+        </div>
       </form>
     </div>
   );

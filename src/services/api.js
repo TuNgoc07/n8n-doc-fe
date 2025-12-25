@@ -65,6 +65,12 @@ export const api = {
       body: JSON.stringify({ email, password }),
     });
   },
+  async register(fullName, email, password) {
+    return request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ fullName, email, password }),
+    });
+  },
   async me() {
     return request("/auth/me", { method: "GET" });
   },

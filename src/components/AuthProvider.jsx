@@ -36,6 +36,15 @@ export function AuthProvider({ children }) {
         setUser(u);
         return u;
       },
+      async register(fullName, email, password) {
+        const result = await api.register(fullName, email, password);
+        const token = result?.token || result?.accessToken || result?.jwt;
+        if (!token) throw new Error("Không nhận được token sau khi đăng ký");
+        api.setToken(token);
+        const u = await api.me();
+        setUser(u);
+        return u;
+      },
       logout() {
         api.logout();
         setUser(null);

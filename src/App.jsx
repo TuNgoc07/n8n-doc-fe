@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useAuth } from "./components/AuthProvider";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import NavigationLayout from "./components/NavigationLayout";
 import DashboardPage from "./pages/DashboardPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
@@ -17,6 +18,8 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   // 'recruitmentList' | 'jobDetail'
   const [activePage, setActivePage] = useState("recruitmentList");
+  // 'login' | 'register'
+  const [authMode, setAuthMode] = useState("login");
 
   const roles = Array.isArray(user?.roles) ? user.roles : [];
   const isPureUser = roles.includes("USER") && !roles.includes("ADMIN") && !roles.includes("EMPLOYEE");
@@ -76,7 +79,11 @@ export default function App() {
       onLogout={logout}
     >
       {!user ? (
-        <LoginPage />
+        authMode === "login" ? (
+          <LoginPage onSwitchToRegister={() => setAuthMode("register")} />
+        ) : (
+          <RegisterPage onSwitchToLogin={() => setAuthMode("login")} />
+        )
       ) : (
         <>
           {!isPureUser && activeMenu === "dashboard" && <DashboardPage />}
