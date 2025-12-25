@@ -7,6 +7,12 @@ const CandidatesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+
+  const [employees, setEmployees] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedAppId, setSelectedAppId] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+
   const viewCv = async (id) => {
     try {
       const blob = await api.downloadApplicationBlob(id);
@@ -18,27 +24,46 @@ const CandidatesPage = () => {
     }
   };
 
-  useEffect(() => {
-    let mounted = true;
+  const loadData = async () => {
     setLoading(true);
-    api
-      .listApplicationsAdmin()
-      .then((data) => {
-        if (!mounted) return;
-        setApps(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => {
-        if (!mounted) return;
-        setError(err?.message || "Không tải được danh sách ứng viên");
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
+    try {
+      const [appsData, employeesData] = await Promise.all([
+        api.listApplicationsAdmin(),
+        api.listEmployees(),
+      ]);
+      setApps(Array.isArray(appsData) ? appsData : []);
+      setEmployees(Array.isArray(employeesData) ? employeesData : []);
+    } catch (err) {
+      setError(err?.message || "Không tải được danh sách ứng viên");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  const handleAssignClick = (appId) => {
+    setSelectedAppId(appId);
+    setSelectedEmployee("");
+    setAssignModalOpen(true);
+  };
+
+  const handleAssignSubmit = async () => {
+    if (!selectedEmployee) {
+      alert("Vui lòng chọn nhân viên");
+      return;
+    }
+    try {
+      await api.assignApplication(selectedAppId, selectedEmployee);
+      alert("Đã phân công thành công!");
+      setAssignModalOpen(false);
+      loadData(); // Reload data to update UI
+    } catch (e) {
+      alert(e.message || "Lỗi phân công");
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = (query || "").toLowerCase().trim();
@@ -147,6 +172,9 @@ const CandidatesPage = () => {
                 Tài liệu
               </th>
               <th className="px-6 py-3" scope="col">
+                Người phụ trách
+              </th>
+              <th className="px-6 py-3" scope="col">
                 Trạng thái
               </th>
               <th className="px-6 py-3" scope="col">
@@ -197,6 +225,18 @@ const CandidatesPage = () => {
                   </button>
                 </td>
                 <td className="px-6 py-4">
+                  {a.assignedEmployee ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">
+                        {a.assignedEmployee.fullName.charAt(0)}
+                      </div>
+                      <span className="text-sm">{a.assignedEmployee.fullName}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic text-sm">Chưa phân công</span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
                   <span className="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                     {a.status || "Mới"}
                   </span>
@@ -206,8 +246,16 @@ const CandidatesPage = () => {
                     <button
                       onClick={() => viewCv(a.id)}
                       className="px-3 py-1 rounded-lg bg-[#282e39] hover:bg-[#3a4152] text-white"
+                      title="Xem CV"
                     >
-                      Xem CV
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                    </button>
+                    <button
+                      onClick={() => handleAssignClick(a.id)}
+                      className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1"
+                      title="Phân công"
+                    >
+                      <span className="material-symbols-outlined text-sm">person_add</span>
                     </button>
                   </div>
                 </td>
@@ -276,6 +324,57 @@ const CandidatesPage = () => {
           </ul>
         </nav>
       </div>
+      {/* Modal Phân công */}
+      {assignModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-[#1a2233] rounded-xl shadow-lg w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Phân công hồ sơ
+              </h3>
+              <button
+                onClick={() => setAssignModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Chọn nhân viên phụ trách
+                </label>
+                <select
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                >
+                  <option value="">-- Chọn nhân viên --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.email}>
+                      {emp.fullName} ({emp.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setAssignModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAssignSubmit}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -71,6 +71,15 @@ export const api = {
   async listApplicationsAdmin() {
     return request("/applications", { method: "GET" });
   },
+  async listEmployees() {
+    return request("/applications/employees", { method: "GET" });
+  },
+  async assignApplication(id, employeeEmail) {
+    return request(`/applications/${id}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ employeeEmail }),
+    });
+  },
   async getDashboardStats() {
     return request("/dashboard/stats", { method: "GET" });
   },
