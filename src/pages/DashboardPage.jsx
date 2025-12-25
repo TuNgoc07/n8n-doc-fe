@@ -1,21 +1,50 @@
 // src/pages/DashboardPage.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { api } from "../services/api";
 
 const DashboardPage = () => {
+  const [stats, setStats] = useState({
+    activeJobs: 0,
+    newApplicationsMonth: 0,
+    applicationsByStatus: {},
+  });
+
+  useEffect(() => {
+    api
+      .getDashboardStats()
+      .then((data) => {
+        setStats(data);
+      })
+      .catch((err) => console.error("Failed to load dashboard stats", err));
+  }, []);
+
+  const getCount = (status) => stats.applicationsByStatus[status] || 0;
+
+  const submitted = getCount("SUBMITTED");
+  const interview = getCount("INTERVIEW_SCHEDULED");
+  const approved = getCount("APPROVED");
+  const rejected = getCount("REJECTED");
+  
+  // Total of known statuses for chart
+  const totalChart = submitted + interview + approved + rejected;
+  const maxCount = Math.max(submitted, interview, approved, rejected, 1); // Avoid div by 0
+
+  const getHeight = (val) => `${Math.round((val / maxCount) * 80)}%`; // Scale to 80% max height
+
   return (
     <>
       {/* KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Vị trí đang mở"
-          value="12"
-          subtitle="+2% so với tháng trước"
+          value={stats.activeJobs}
+          subtitle="Đang hoạt động"
           subtitleColor="#0bda5e"
         />
         <StatCard
-          title="Hồ sơ mới (24h)"
-          value="8"
-          subtitle="+5% so với hôm qua"
+          title="Hồ sơ mới (30 ngày)"
+          value={stats.newApplicationsMonth}
+          subtitle="Trong tháng qua"
           subtitleColor="#0bda5e"
         />
         <StatCard
@@ -25,7 +54,7 @@ const DashboardPage = () => {
           subtitleColor="#fa6238"
         />
         <StatCard
-          title="Quy trình đang chạyyy"
+          title="Quy trình đang chạy"
           value="23"
           subtitle="+1.5% so với tuần trước"
           subtitleColor="#0bda5e"
@@ -40,24 +69,19 @@ const DashboardPage = () => {
             Hồ sơ ứng tuyển theo trạng thái
           </p>
           <p className="text-white tracking-light text-[32px] font-bold leading-tight truncate">
-            256
+            {totalChart}
           </p>
           <div className="flex gap-1">
             <p className="text-[#9da6b9] text-base font-normal leading-normal">
-              Tháng này
-            </p>
-            <p className="text-[#0bda5e] text-base font-medium leading-normal">
-              +15.3%
+              Tổng cộng
             </p>
           </div>
 
           <div className="grid min-h-[180px] grid-flow-col gap-6 grid-rows-[1fr_auto] items-end justify-items-center px-3 pt-4">
-            <Bar label="Mới" height="20%" />
-            <Bar label="Sàng lọc" height="50%" />
-            <Bar label="Phỏng vấn" height="35%" />
-            <Bar label="Offer" height="25%" />
-            <Bar label="Nhận việc" height="15%" />
-            <Bar label="Từ chối" height="40%" color="#3b4354" />
+            <Bar label="Mới" height={getHeight(submitted)} />
+            <Bar label="Phỏng vấn" height={getHeight(interview)} />
+            <Bar label="Nhận việc" height={getHeight(approved)} />
+            <Bar label="Từ chối" height={getHeight(rejected)} color="#3b4354" />
           </div>
         </div>
 

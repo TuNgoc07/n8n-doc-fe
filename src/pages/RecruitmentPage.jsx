@@ -83,6 +83,7 @@ const RecruitmentPage = ({ onEditJob }) => {
         id: j.id,
         title: j.title || "",
         description: j.description || "",
+        requirement: j.requirement || "",
         location: j.location || "",
         department: j.department || "",
         active: !!j.active,
@@ -98,6 +99,7 @@ const RecruitmentPage = ({ onEditJob }) => {
       const payload = {
         title: editData.title,
         description: editData.description,
+        requirement: editData.requirement,
         location: editData.location,
         department: editData.department,
         active: editData.active,

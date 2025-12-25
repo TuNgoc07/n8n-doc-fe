@@ -71,6 +71,9 @@ export const api = {
   async listApplicationsAdmin() {
     return request("/applications", { method: "GET" });
   },
+  async getDashboardStats() {
+    return request("/dashboard/stats", { method: "GET" });
+  },
   applicationDownloadUrl(id) {
     return `${API_BASE}/applications/${id}/download`;
   },
