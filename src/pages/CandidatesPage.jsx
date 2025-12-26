@@ -13,6 +13,13 @@ const CandidatesPage = () => {
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState("");
 
+  // Decision Modal State
+  const [decisionModalOpen, setDecisionModalOpen] = useState(false);
+  const [decisionApp, setDecisionApp] = useState(null);
+  const [decisionType, setDecisionType] = useState('APPROVED'); // APPROVED or REJECTED
+  const [decisionNote, setDecisionNote] = useState("");
+  const [decisionFile, setDecisionFile] = useState(null);
+
   const viewCv = async (id) => {
     try {
       const blob = await api.downloadApplicationBlob(id);
@@ -65,6 +72,32 @@ const CandidatesPage = () => {
       let msg = e.message || "Lỗi phân công";
       try {
           // Thử parse nếu là JSON string
+          const json = JSON.parse(msg);
+          if (json.message) msg = json.message;
+      } catch {}
+      alert("Lỗi: " + msg);
+    }
+  };
+
+  const openDecisionModal = (app, type) => {
+    setDecisionApp(app);
+    setDecisionType(type);
+    setDecisionNote("");
+    setDecisionFile(null);
+    setDecisionModalOpen(true);
+  };
+
+  const handleDecisionSubmit = async () => {
+    if (!decisionApp) return;
+    try {
+      await api.processDecision(decisionApp.id, decisionType, decisionNote, decisionFile);
+      alert("Đã xử lý hồ sơ thành công!");
+      setDecisionModalOpen(false);
+      loadData();
+    } catch (e) {
+      console.error("Decision error:", e);
+      let msg = e.message || "Lỗi xử lý hồ sơ";
+      try {
           const json = JSON.parse(msg);
           if (json.message) msg = json.message;
       } catch {}
@@ -251,11 +284,18 @@ const CandidatesPage = () => {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => viewCv(a.id)}
-                      className="px-3 py-1 rounded-lg bg-[#282e39] hover:bg-[#3a4152] text-white"
-                      title="Xem CV"
+                      onClick={() => openDecisionModal(a, 'APPROVED')}
+                      className="px-3 py-1 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      title="Đồng ý"
                     >
-                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      <span className="material-symbols-outlined text-sm">check_circle</span>
+                    </button>
+                    <button
+                      onClick={() => openDecisionModal(a, 'REJECTED')}
+                      className="px-3 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      title="Từ chối"
+                    >
+                      <span className="material-symbols-outlined text-sm">cancel</span>
                     </button>
                     <button
                       onClick={() => handleAssignClick(a.id)}
