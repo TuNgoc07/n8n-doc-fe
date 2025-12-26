@@ -50,7 +50,7 @@ const NavigationLayout = ({
               />
               <div className="flex flex-col">
                 <h1 className="text-white text-base font-medium leading-normal">
-                  Tên Công Ty
+                  My Company
                 </h1>
                 <p className="text-[#9da6b9] text-sm font-normal leading-normal">
                   Hệ thống Vận hành
