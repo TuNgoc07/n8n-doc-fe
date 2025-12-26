@@ -341,45 +341,102 @@ const CandidatesPage = () => {
               </h3>
               <button
                 onClick={() => setAssignModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
-              >
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <div className="p-6">
-              <div className="mb-4">
-                <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Chọn nhân viên phụ trách
-                </label>
-                {employees.length === 0 ? (
-                  <p className="text-sm text-red-500">
-                     Hiện tại chưa có tài khoản nhân viên nào (Role: EMPLOYEE).
-                  </p>
-                ) : (
-                <select
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                  value={selectedEmployee}
-                  onChange={(e) => setSelectedEmployee(e.target.value)}
-                >
-                  <option value="">-- Chọn nhân viên --</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.email}>
-                      {emp.fullName} ({emp.email})
-                    </option>
-                  ))}
-                </select>
-                )}
-              </div>
-              <div className="flex justify-end gap-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Chọn nhân viên phụ trách
+              </label>
+              <select
+                className="w-full p-2.5 rounded-lg border border-gray-300 bg-gray-50 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:ring-primary focus:border-primary"
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+              >
+                <option value="">-- Chọn nhân viên --</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.email}>
+                    {emp.fullName} ({emp.email})
+                  </option>
+                ))}
+              </select>
+
+              <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setAssignModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleAssignSubmit}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Duyệt/Từ chối */}
+      {decisionModalOpen && decisionApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-[#1a2233] rounded-xl shadow-lg w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {decisionType === 'APPROVED' ? 'Duyệt hồ sơ' : 'Từ chối hồ sơ'}
+              </h3>
+              <button
+                onClick={() => setDecisionModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Bạn đang <strong>{decisionType === 'APPROVED' ? 'ĐỒNG Ý' : 'TỪ CHỐI'}</strong> ứng viên <strong>{decisionApp.applicant?.fullName || decisionApp.applicant?.email}</strong>.
+              </p>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Ghi chú
+                </label>
+                <textarea
+                  className="w-full p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                  rows={3}
+                  value={decisionNote}
+                  onChange={(e) => setDecisionNote(e.target.value)}
+                  placeholder="Nhập ghi chú..."
+                />
+              </div>
+
+              {decisionType === 'APPROVED' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Offer File (nếu có)
+                  </label>
+                  <input
+                    type="file"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 dark:text-gray-400"
+                    onChange={(e) => setDecisionFile(e.target.files[0])}
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setDecisionModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleDecisionSubmit}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${decisionType === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                 >
                   Xác nhận
                 </button>

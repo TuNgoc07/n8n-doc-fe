@@ -123,6 +123,26 @@ export const api = {
     }
     return res.json();
   },
+  async processDecision(id, status, note, offerFile) {
+    const token = getToken();
+    const form = new FormData();
+    form.append("status", status);
+    if (note) form.append("note", note);
+    if (offerFile) form.append("offerFile", offerFile);
+
+    const res = await fetch(`${API_BASE}/applications/${id}/decision`, {
+      method: "POST",
+      body: form,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: "omit",
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || res.statusText);
+    }
+    return res.json();
+  },
   async logout() {
     try {
       await request("/auth/logout", { method: "POST" });
