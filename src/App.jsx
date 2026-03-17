@@ -1,74 +1,58 @@
-// src/App.jsx
 import React, { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./components/AuthProvider";
+import ProtectedRoute from "./components/ProtectedRoute";
+import NavigationLayout from "./components/NavigationLayout";
+
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import NavigationLayout from "./components/NavigationLayout";
 import DashboardPage from "./pages/DashboardPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
 import CandidatesPage from "./pages/CandidatesPage";
 import SchedulePage from "./pages/SchedulePage";
 import AdminUsersPage from "./pages/UserAdministrationPage";
 import WorkflowBuilderPage from "./pages/WorkflowBuilderPage";
-import JobDetailPage from "./pages/JobDetailPage";
 import ApplyJobsPage from "./pages/ApplyJobsPage";
 
-export default function App() {
-  const { user, loading, logout } = useAuth();
-  const [activeMenu, setActiveMenu] = useState("dashboard");
-  // 'recruitmentList' | 'jobDetail'
-  const [activePage, setActivePage] = useState("recruitmentList");
-  // 'login' | 'register'
-  const [authMode, setAuthMode] = useState("login");
+// Layout wrapper dùng React Router
+function AppLayout() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const roles = Array.isArray(user?.roles) ? user.roles : [];
   const isPureUser = roles.includes("USER") && !roles.includes("ADMIN") && !roles.includes("EMPLOYEE");
 
-  React.useEffect(() => {
-    if (user && isPureUser) {
-      setActiveMenu("applyJobs");
-    }
-  }, [user, isPureUser]);
-
-  const handleNavChange = (menuKey) => {
-    setActiveMenu(menuKey);
-
-    // Khi chuyển sang menu Tuyển dụng thì luôn quay về danh sách
-    if (menuKey === "recruitment") {
-      setActivePage("recruitmentList");
-    }
+  // Map pathname → menu key
+  const pathToMenu = {
+    "/dashboard": "dashboard",
+    "/apply": "applyJobs",
+    "/recruitment": "recruitment",
+    "/candidates": "candidates",
+    "/schedule": "schedule",
+    "/admin/users": "adminUsers",
+    "/workflow": "workflow",
   };
+  const menuToPath = Object.fromEntries(Object.entries(pathToMenu).map(([k, v]) => [v, k]));
+
+  const activeMenu = pathToMenu[location.pathname] || "dashboard";
 
   const getTitle = () => {
-    if (isPureUser) return "Ứng tuyển vị trí";
     switch (activeMenu) {
-      case "recruitment":
-        return activePage === "jobDetail"
-          ? "Chi tiết Vị trí Tuyển dụng"
-          : "Danh sách Vị trí Tuyển dụng";
-      case "candidates":
-        return "Quản lý Ứng viên & Tài liệu";
-      case "adminUsers":
-        return "Quản lý Người dùng & Phân quyền";
-      case "workflow":
-        return "Quy trình";
-      case "schedule":
-        return "Lịch trình Phỏng vấn";
-      case "documents":
-        return "Tài liệu";
-      case "dashboard":
-      default:
-        return "Dashboard Tổng quan";
+      case "recruitment":   return "Danh sách Vị trí Tuyển dụng";
+      case "candidates":    return "Quản lý Ứng viên & Tài liệu";
+      case "adminUsers":    return "Quản lý Người dùng & Phân quyền";
+      case "workflow":      return "Quy trình";
+      case "schedule":      return "Lịch trình Phỏng vấn";
+      case "applyJobs":     return "Ứng tuyển vị trí";
+      default:              return "Dashboard Tổng quan";
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        Đang tải...
-      </div>
-    );
-  }
+  const handleNavChange = (menuKey) => {
+    const path = menuToPath[menuKey];
+    if (path) navigate(path);
+  };
 
   return (
     <NavigationLayout
@@ -76,37 +60,82 @@ export default function App() {
       active={activeMenu}
       onNavChange={handleNavChange}
       user={user}
-      onLogout={logout}
+      onLogout={() => { logout(); navigate("/login", { replace: true }); }}
     >
-      {!user ? (
-        authMode === "login" ? (
-          <LoginPage onSwitchToRegister={() => setAuthMode("register")} />
-        ) : (
-          <RegisterPage onSwitchToLogin={() => setAuthMode("login")} />
-        )
-      ) : (
-        <>
-          {!isPureUser && activeMenu === "dashboard" && <DashboardPage />}
-
-          {!isPureUser && activeMenu === "recruitment" &&
-            (activePage === "recruitmentList" ? (
-              <RecruitmentPage onEditJob={() => setActivePage("jobDetail")} />
-            ) : (
-              <JobDetailPage />
-            ))}
-
-          {activeMenu === "applyJobs" && <ApplyJobsPage />}
-
-          {!isPureUser && activeMenu === "candidates" && <CandidatesPage />}
-          {!isPureUser && activeMenu === "schedule" && <SchedulePage />}
-          {!isPureUser && activeMenu === "adminUsers" && <AdminUsersPage />}
-          {!isPureUser && activeMenu === "workflow" && <WorkflowBuilderPage />}
-
-          {/* Sau này có thể thêm:
-              {activeMenu === "documents" && <DocumentsPage />}
-          */}
-        </>
-      )}
+      <Routes>
+        <Route path="/dashboard" element={
+          <ProtectedRoute requireRoles={["ADMIN", "EMPLOYEE"]}>
+            <DashboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/apply" element={
+          <ProtectedRoute>
+            <ApplyJobsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/recruitment" element={
+          <ProtectedRoute requireRoles={["ADMIN", "EMPLOYEE"]}>
+            <RecruitmentPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/candidates" element={
+          <ProtectedRoute requireRoles={["ADMIN", "EMPLOYEE"]}>
+            <CandidatesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/schedule" element={
+          <ProtectedRoute requireRoles={["ADMIN", "EMPLOYEE"]}>
+            <SchedulePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <ProtectedRoute requireRoles={["ADMIN"]}>
+            <AdminUsersPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/workflow" element={
+          <ProtectedRoute requireRoles={["ADMIN", "EMPLOYEE"]}>
+            <WorkflowBuilderPage />
+          </ProtectedRoute>
+        } />
+        <Route path="*" element={
+          <Navigate to={isPureUser ? "/apply" : "/dashboard"} replace />
+        } />
+      </Routes>
     </NavigationLayout>
+  );
+}
+
+// Root: tách login/register ra ngoài layout
+function RootRouter() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f1117]">
+        <div className="flex items-center gap-3 text-white/40">
+          <span className="material-symbols-outlined">progress_activity</span>
+          Đang tải...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+      <Route path="/*" element={
+        user ? <AppLayout /> : <Navigate to="/login" replace />
+      } />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <RootRouter />
+    </BrowserRouter>
   );
 }

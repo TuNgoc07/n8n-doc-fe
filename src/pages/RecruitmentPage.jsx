@@ -21,6 +21,10 @@ const RecruitmentPage = ({ onEditJob }) => {
     active: true,
   });
 
+  const emptyForm = { title: "", description: "", requirement: "", location: "", department: "", active: true };
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createData, setCreateData] = useState(emptyForm);
+
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -94,6 +98,21 @@ const RecruitmentPage = ({ onEditJob }) => {
     }
   };
 
+  const saveCreate = async () => {
+    if (!createData.title.trim()) {
+      alert("Vui lòng nhập tiêu đề công việc.");
+      return;
+    }
+    try {
+      const created = await api.createJob(createData);
+      setJobs((prev) => [{ ...created, applicantsCount: 0 }, ...prev]);
+      setCreateOpen(false);
+      setCreateData(emptyForm);
+    } catch (err) {
+      alert(`Tạo vị trí thất bại: ${err.message}`);
+    }
+  };
+
   const saveEdit = async () => {
     try {
       const payload = {
@@ -123,7 +142,10 @@ const RecruitmentPage = ({ onEditJob }) => {
         <p className="text-gray-900 dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">
           Danh sách Vị trí Tuyển dụng
         </p>
-        <button className="flex items-center justify-center gap-2 min-w-[84px] max-w-[480px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em]">
+        <button
+          onClick={() => { setCreateData(emptyForm); setCreateOpen(true); }}
+          className="flex items-center justify-center gap-2 min-w-[84px] max-w-[480px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em]"
+        >
           <span className="material-symbols-outlined">add</span>
           <span className="truncate">Tạo vị trí mới</span>
         </button>
@@ -259,6 +281,85 @@ const RecruitmentPage = ({ onEditJob }) => {
           </div>
         </div>
       </div>
+
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-2xl p-6">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Tạo vị trí tuyển dụng mới</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tiêu đề <span className="text-red-500">*</span></label>
+                <input
+                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
+                  value={createData.title}
+                  onChange={(e) => setCreateData((d) => ({ ...d, title: e.target.value }))}
+                  placeholder="Ví dụ: Kỹ sư phần mềm Backend"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mô tả</label>
+                <textarea
+                  rows={4}
+                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
+                  value={createData.description}
+                  onChange={(e) => setCreateData((d) => ({ ...d, description: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Yêu cầu</label>
+                <textarea
+                  rows={4}
+                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
+                  value={createData.requirement}
+                  onChange={(e) => setCreateData((d) => ({ ...d, requirement: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Địa điểm</label>
+                  <input
+                    className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
+                    value={createData.location}
+                    onChange={(e) => setCreateData((d) => ({ ...d, location: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phòng ban</label>
+                  <input
+                    className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark px-3 py-2 text-gray-900 dark:text-white"
+                    value={createData.department}
+                    onChange={(e) => setCreateData((d) => ({ ...d, department: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={createData.active}
+                  onChange={(e) => setCreateData((d) => ({ ...d, active: e.target.checked }))}
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Mở ngay sau khi tạo</span>
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setCreateOpen(false)}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-md bg-primary text-white"
+                onClick={saveCreate}
+              >
+                Tạo mới
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

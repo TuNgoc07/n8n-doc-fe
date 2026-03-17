@@ -53,6 +53,12 @@ export const api = {
   async getJob(id) {
     return request(`/jobs/${id}`, { method: "GET" });
   },
+  async createJob(payload) {
+    return request("/jobs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
   async updateJob(id, payload) {
     return request(`/jobs/${id}`, {
       method: "PUT",
@@ -89,6 +95,34 @@ export const api = {
   async getDashboardStats() {
     return request("/dashboard/stats", { method: "GET" });
   },
+  // Schedule
+  async listSchedules() {
+    return request("/schedules", { method: "GET" });
+  },
+  async saveSchedule(applicationId, payload) {
+    return request(`/schedules/${applicationId}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async cancelSchedule(applicationId) {
+    return request(`/schedules/${applicationId}`, { method: "DELETE" });
+  },
+  async listUsers() {
+    return request("/users", { method: "GET" });
+  },
+  async listRoles() {
+    return request("/users/roles", { method: "GET" });
+  },
+  async updateUserRoles(id, roles) {
+    return request(`/users/${id}/roles`, {
+      method: "PUT",
+      body: JSON.stringify({ roles }),
+    });
+  },
+  async deleteUser(id) {
+    return request(`/users/${id}`, { method: "DELETE" });
+  },
   applicationDownloadUrl(id) {
     return `${API_BASE}/applications/${id}/download`;
   },
@@ -123,16 +157,14 @@ export const api = {
     }
     return res.json();
   },
-  async processDecision(id, status, note, offerFile) {
+  async processDecision(id, status, note) {
     const token = getToken();
-    const form = new FormData();
-    form.append("status", status);
-    if (note) form.append("note", note);
-    if (offerFile) form.append("offerFile", offerFile);
+    const params = new URLSearchParams();
+    params.append("status", status);
+    if (note) params.append("note", note);
 
-    const res = await fetch(`${API_BASE}/applications/${id}/decision`, {
+    const res = await fetch(`${API_BASE}/applications/${id}/decision?${params.toString()}`, {
       method: "POST",
-      body: form,
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       credentials: "omit",
     });

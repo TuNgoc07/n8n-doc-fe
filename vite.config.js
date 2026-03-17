@@ -12,14 +12,14 @@ export default defineConfig(({ mode }) => {
         // Lưu ý: KHÔNG xoá prefix /api cho các route chung
         // Chỉ rewrite cho nhánh /api/auth -> /auth
         '/api/auth': {
-          target: env.VITE_API_PROXY_TARGET || 'http://localhost:8083',
+          target: env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
           changeOrigin: true,
           secure: false,
           cookieDomainRewrite: 'localhost',
-          rewrite: (path) => path.replace(/^\/api\/auth/, '/auth'),
+          // Không rewrite, giữ nguyên /api/auth/* để khớp với BE controller
         },
         '/api': {
-          target: env.VITE_API_PROXY_TARGET || 'http://localhost:8083',
+          target: env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
           changeOrigin: true,
           secure: false,
           cookieDomainRewrite: 'localhost',

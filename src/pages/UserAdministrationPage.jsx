@@ -1,325 +1,293 @@
-// src/pages/AdminUsersPage.jsx
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { api } from "../services/api";
 
-const AdminUsersPage = () => {
+const ROLE_STYLES = {
+  ADMIN:     "bg-blue-500/15 text-blue-400",
+  EMPLOYEE:  "bg-purple-500/15 text-purple-400",
+  USER:      "bg-gray-500/15 text-gray-400",
+  APPLICANT: "bg-green-500/15 text-green-400",
+};
+
+export default function UserAdministrationPage() {
+  const [users, setUsers]         = useState([]);
+  const [roles, setRoles]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState("");
+  const [search, setSearch]       = useState("");
+  const [filterRole, setFilterRole] = useState("ALL");
+
+  // Modal state
+  const [editUser, setEditUser]   = useState(null); // { id, fullName, email, roles[] }
+  const [editRoles, setEditRoles] = useState([]);
+  const [saving, setSaving]       = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  useEffect(() => {
+    Promise.all([api.listUsers(), api.listRoles()])
+      .then(([u, r]) => {
+        setUsers(Array.isArray(u) ? u : []);
+        setRoles(Array.isArray(r) ? r : []);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const displayed = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      const matchSearch = !q ||
+        (u.fullName || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q);
+      const matchRole = filterRole === "ALL" ||
+        (Array.isArray(u.roles) && u.roles.includes(filterRole));
+      return matchSearch && matchRole;
+    });
+  }, [users, search, filterRole]);
+
+  const openEdit = (user) => {
+    setEditUser(user);
+    setEditRoles(Array.isArray(user.roles) ? [...user.roles] : []);
+  };
+
+  const saveRoles = async () => {
+    setSaving(true);
+    try {
+      const updated = await api.updateUserRoles(editUser.id, editRoles);
+      setUsers((prev) => prev.map((u) => u.id === updated.id ? updated : u));
+      setEditUser(null);
+    } catch (e) {
+      alert("Lỗi: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.deleteUser(deleteTarget.id);
+      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (e) {
+      alert("Lỗi: " + e.message);
+    }
+  };
+
+  const toggleRole = (role) => {
+    setEditRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  };
+
   return (
-    <div className="w-full max-w-7xl mx-auto">
-      {/* Breadcrumbs */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <a
-          href="#"
-          className="text-[#9da6b9] text-base font-medium leading-normal hover:text-primary"
-        >
-          Dashboard
-        </a>
-        <span className="text-[#9da6b9] text-base font-medium leading-normal">
-          /
-        </span>
-        <a
-          href="#"
-          className="text-[#9da6b9] text-base font-medium leading-normal hover:text-primary"
-        >
-          Quản trị hệ thống
-        </a>
-        <span className="text-[#9da6b9] text-base font-medium leading-normal">
-          /
-        </span>
-        <span className="text-white text-base font-medium leading-normal">
-          Người dùng
-        </span>
-      </div>
-
-      {/* Page heading */}
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-white text-3xl font-bold leading-tight tracking-tight">
-            Quản lý Người dùng &amp; Phân quyền
-          </p>
-          <p className="text-[#9da6b9] text-base font-normal leading-normal">
-            Quản lý, chỉnh sửa vai trò và phân quyền cho người dùng hệ thống.
-          </p>
+    <div className="w-full max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+        <div>
+          <h1 className="text-white text-2xl font-bold">Quản lý Người dùng</h1>
+          <p className="text-white/40 text-sm mt-1">Phân quyền và quản lý tài khoản hệ thống</p>
         </div>
       </div>
 
-      {/* Toolbar & Search */}
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-        <div className="flex-1">
-          <label className="flex flex-col min-w-40 h-11 w-full max-w-md">
-            <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
-              <div className="text-[#9da6b9] flex bg-[#282e39] items-center justify-center pl-4 rounded-l-lg">
-                <span className="material-symbols-outlined">search</span>
-              </div>
-              <input
-                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-[#282e39] h-full placeholder:text-[#9da6b9] px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal"
-                placeholder="Tìm kiếm theo tên, email..."
-                defaultValue=""
-              />
-            </div>
-          </label>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex flex-1 items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 h-10 max-w-sm">
+          <span className="material-symbols-outlined text-white/30 text-xl">search</span>
+          <input
+            className="flex-1 bg-transparent text-white text-sm placeholder-white/20 focus:outline-none"
+            placeholder="Tìm theo tên, email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center justify-center gap-2 rounded-lg h-11 px-4 bg-[#282e39] text-white text-sm font-medium leading-normal hover:bg-[#3a4251]">
-            <span className="material-symbols-outlined text-base">
-              filter_list
-            </span>
-            <span>Vai trò</span>
-          </button>
-          <button className="flex items-center justify-center gap-2 rounded-lg h-11 px-4 bg-[#282e39] text-white text-sm font-medium leading-normal hover:bg-[#3a4251]">
-            <span className="material-symbols-outlined text-base">
-              filter_list
-            </span>
-            <span>Trạng thái</span>
-          </button>
-          <button className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 bg-primary text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-4 hover:bg-primary/90">
-            <span
-              className="material-symbols-outlined text-xl"
-              style={{ fontVariationSettings: "'wght' 600" }}
-            >
-              add
-            </span>
-            <span className="truncate">Thêm Người dùng</span>
-          </button>
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 h-10 focus:outline-none focus:border-primary"
+          >
+            <option value="ALL">Tất cả vai trò</option>
+            {roles.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
         </div>
       </div>
 
-      {/* User table */}
-      <div className="bg-[#111318] rounded-xl border border-gray-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-[#9da6b9]">
-            <thead className="text-xs text-gray-400 uppercase bg-[#282e39]/30">
-              <tr>
-                <th scope="col" className="p-4">
-                  <div className="flex items-center">
-                    <input
-                      id="checkbox-all"
-                      type="checkbox"
-                      className="w-4 h-4 text-primary bg-gray-700 border-gray-600 rounded focus:ring-primary focus:ring-2"
-                    />
-                    <label htmlFor="checkbox-all" className="sr-only">
-                      checkbox
-                    </label>
-                  </div>
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Tên Đầy Đủ
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Email
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Vai trò
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Trạng thái
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Ngày tham gia
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Hành động
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <UserRow
-                checkboxId="checkbox-table-1"
-                avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBN1EJk0JH3Nzi713gunb55-GDrVh_HM5Ppjm0-LILQyRZagEjK4RhB_pwCDL6VNRTLWh0qJ2hpNhKeMP-LvQ1H14fJl1MFHQEtGyLjt0HcpSnUuc0_YgfcgiuqGbqwymDtCq69xRcM35uAQV_UUyqjxYVUZzl6RVHatnD6bZG3ty5SnMMV7b39L0QrZNaJoqbkRPJgs0Jiv9pXtqrhu9CdobO_RZI59sXHeb8WuC4FtRSLV7N7rcGXJueSEC_bnJ3FYMStobco_r4"
-                name="Nguyễn Văn An"
-                username="@an.nguyen"
-                email="an.nguyen@company.com"
-                roleLabel="Admin"
-                roleClass="bg-blue-900 text-blue-300"
-                active
-                joinedAt="2023-08-15"
-                toggleIcon="toggle_on"
-              />
+      {/* Table */}
+      <div className="bg-[#111318] rounded-xl border border-white/5 overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-white/30 text-sm">Đang tải...</div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-400 text-sm">{error}</div>
+        ) : displayed.length === 0 ? (
+          <div className="p-8 text-center text-white/30 text-sm">Không có người dùng nào.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="border-b border-white/5">
+                <tr className="text-white/30 text-xs uppercase">
+                  <th className="px-5 py-3 font-medium">Người dùng</th>
+                  <th className="px-5 py-3 font-medium">Email</th>
+                  <th className="px-5 py-3 font-medium">Vai trò</th>
+                  <th className="px-5 py-3 font-medium text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {displayed.map((u) => (
+                  <tr key={u.id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                          <span className="text-primary text-sm font-semibold">
+                            {(u.fullName || u.email || "?")[0].toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-white font-medium">{u.fullName || "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-white/50">{u.email}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(u.roles || []).map((r) => (
+                          <span
+                            key={r}
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_STYLES[r] || "bg-white/10 text-white/60"}`}
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex justify-end gap-1">
+                        <IconBtn icon="manage_accounts" title="Phân quyền" onClick={() => openEdit(u)} />
+                        <IconBtn icon="delete" title="Xóa" danger onClick={() => setDeleteTarget(u)} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-              <UserRow
-                checkboxId="checkbox-table-2"
-                avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBrTHRJOLe3_YGANNXLYfnLugKmbdjYRDnJQxnigU2I_08xiBdjYRYLyGokek7iWGz-A4rq2KsLSIvfpvVZ1nAABo_CkeYMbmiOKYNk1as_Hi-GTvUEYyr2lET0_p2YzaboRJ-WlbGSJzBeo5O1VVNYVWjESgjpX6u7eEGtNSgVMhUfXz7MofOsDSYKLxyRHE_Wk5-nxAVPU8hUtoDeNA8wuWhuNmkWSOO7gsaLj_XPBYaXWFZwW-rKsGhneFiqKV995ZHcJFeQo8I"
-                name="Trần Thị Bích"
-                username="@bich.tran"
-                email="bich.tran@company.com"
-                roleLabel="HR Manager"
-                roleClass="bg-purple-900 text-purple-300"
-                active
-                joinedAt="2023-07-20"
-                toggleIcon="toggle_on"
-              />
+        {/* Footer count */}
+        {!loading && !error && (
+          <div className="px-5 py-3 border-t border-white/5 text-white/30 text-xs">
+            {displayed.length} / {users.length} người dùng
+          </div>
+        )}
+      </div>
 
-              <UserRow
-                checkboxId="checkbox-table-3"
-                avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuCnc2t4EAl_hNa7u47u6XWA5djkPbUPOiuL7DRss9-sR-vdtbtXo0mCyedADIEEhtjYdPp74CWifyZx8i_l3MGAohUJu-OOJuPsAzPNNIYEujJkmmwyDqOhchF4RDj5qQcSXskSNeTy4xCSCyQ2iQMQKqnIg10Io_FVVAOx4MNi9vrl8GbV4G4xopJfu6vexHw-0RFB_VK2s6oi0BFeUlz5umKKZOlLw4B0FTuxjqBpvLH0PHVjI68X95HeDYpQIn8VtC579KvhM9c"
-                name="Lê Minh Cường"
-                username="@cuong.le"
-                email="cuong.le@company.com"
-                roleLabel="Member"
-                roleClass="bg-gray-700 text-gray-300"
-                active={false}
-                joinedAt="2023-05-01"
-                toggleIcon="toggle_off"
-              />
-            </tbody>
-          </table>
+      {/* Edit roles modal */}
+      {editUser && (
+        <Modal title="Phân quyền người dùng" onClose={() => setEditUser(null)}>
+          <div className="mb-4">
+            <p className="text-white font-medium">{editUser.fullName || editUser.email}</p>
+            <p className="text-white/40 text-sm">{editUser.email}</p>
+          </div>
+          <p className="text-white/60 text-sm mb-3">Chọn vai trò:</p>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {roles.map((r) => {
+              const active = editRoles.includes(r);
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => toggleRole(r)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors
+                    ${active
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-white/5 border-white/10 text-white/50 hover:border-white/30"
+                    }`}
+                >
+                  {r}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditUser(null)}
+              className="px-4 py-2 rounded-lg text-sm text-white/50 hover:text-white border border-white/10 hover:border-white/20 bg-transparent transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={saveRoles}
+              disabled={saving}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {saving ? "Đang lưu..." : "Lưu"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete confirm modal */}
+      {deleteTarget && (
+        <Modal title="Xác nhận xóa" onClose={() => setDeleteTarget(null)}>
+          <p className="text-white/70 text-sm mb-6">
+            Bạn có chắc muốn xóa tài khoản{" "}
+            <span className="text-white font-medium">{deleteTarget.fullName || deleteTarget.email}</span>?
+            Hành động này không thể hoàn tác.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              className="px-4 py-2 rounded-lg text-sm text-white/50 hover:text-white border border-white/10 bg-transparent transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={confirmDelete}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >
+              Xóa
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function IconBtn({ icon, title, onClick, danger }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className={`w-8 h-8 flex items-center justify-center rounded-lg border-none transition-colors
+        ${danger
+          ? "text-white/30 hover:text-red-400 hover:bg-red-500/10"
+          : "text-white/30 hover:text-white hover:bg-white/8"
+        }`}
+    >
+      <span className="material-symbols-outlined text-lg">{icon}</span>
+    </button>
+  );
+}
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#1a1f2e] border border-white/10 rounded-xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-white font-semibold">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-white/30 hover:text-white border-none bg-transparent transition-colors"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
+          </button>
         </div>
-
-        {/* Pagination */}
-        <nav
-          className="flex items-center justify-between p-4"
-          aria-label="Table navigation"
-        >
-          <span className="text-sm font-normal text-gray-400">
-            Hiển thị{" "}
-            <span className="font-semibold text-white">1-10</span> của{" "}
-            <span className="font-semibold text-white">100</span>
-          </span>
-          <ul className="inline-flex items-center -space-x-px">
-            <li>
-              <a
-                href="#"
-                className="block px-3 py-2 ml-0 leading-tight text-gray-400 bg-[#282e39] border border-gray-700 rounded-l-lg hover:bg-[#3a4251] hover:text-white"
-              >
-                <span className="sr-only">Previous</span>
-                <span className="material-symbols-outlined text-xl">
-                  chevron_left
-                </span>
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="px-3 py-2 leading-tight text-gray-400 bg-[#282e39] border border-gray-700 hover:bg-[#3a4251] hover:text-white"
-              >
-                1
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="px-3 py-2 leading-tight text-white bg-primary border border-primary hover:bg-primary/90"
-              >
-                2
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                aria-current="page"
-                className="z-10 px-3 py-2 leading-tight text-gray-400 bg-[#282e39] border border-gray-700 hover:bg-[#3a4251] hover:text-white"
-              >
-                3
-              </a>
-            </li>
-            <li>
-              <span className="px-3 py-2 leading-tight text-gray-400 bg-[#282e39] border border-gray-700">
-                ...
-              </span>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="px-3 py-2 leading-tight text-gray-400 bg-[#282e39] border border-gray-700 hover:bg-[#3a4251] hover:text-white"
-              >
-                10
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="block px-3 py-2 leading-tight text-gray-400 bg-[#282e39] border border-gray-700 rounded-r-lg hover:bg-[#3a4251] hover:text-white"
-              >
-                <span className="sr-only">Next</span>
-                <span className="material-symbols-outlined text-xl">
-                  chevron_right
-                </span>
-              </a>
-            </li>
-          </ul>
-        </nav>
+        {children}
       </div>
     </div>
   );
-};
-
-/* ---- small components ---- */
-
-const UserRow = ({
-  checkboxId,
-  avatar,
-  name,
-  username,
-  email,
-  roleLabel,
-  roleClass,
-  active,
-  joinedAt,
-  toggleIcon,
-}) => (
-  <tr className="border-b border-gray-800 hover:bg-[#282e39]/20">
-    <td className="w-4 p-4">
-      <div className="flex items-center">
-        <input
-          id={checkboxId}
-          type="checkbox"
-          className="w-4 h-4 text-primary bg-gray-700 border-gray-600 rounded focus:ring-primary focus:ring-2"
-        />
-        <label htmlFor={checkboxId} className="sr-only">
-          checkbox
-        </label>
-      </div>
-    </td>
-    <th
-      scope="row"
-      className="flex items-center px-6 py-4 text-white whitespace-nowrap"
-    >
-      <img
-        className="w-10 h-10 rounded-full"
-        src={avatar}
-        alt="User avatar"
-      />
-      <div className="pl-3">
-        <div className="text-base font-semibold">{name}</div>
-        <div className="font-normal text-gray-400">{username}</div>
-      </div>
-    </th>
-    <td className="px-6 py-4">{email}</td>
-    <td className="px-6 py-4">
-      <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${roleClass}`}
-      >
-        {roleLabel}
-      </span>
-    </td>
-    <td className="px-6 py-4">
-      {active ? (
-        <div className="flex items-center">
-          <div className="h-2.5 w-2.5 rounded-full bg-green-500 mr-2" />
-          Đang hoạt động
-        </div>
-      ) : (
-        <div className="flex items-center text-red-400">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-500 mr-2" />
-          Vô hiệu hóa
-        </div>
-      )}
-    </td>
-    <td className="px-6 py-4">{joinedAt}</td>
-    <td className="px-6 py-4">
-      <div className="flex items-center gap-2 text-gray-400">
-        <IconButton icon="edit" />
-        <IconButton icon="shield_person" />
-        <IconButton icon={toggleIcon} />
-        <IconButton icon="more_vert" />
-      </div>
-    </td>
-  </tr>
-);
-
-const IconButton = ({ icon }) => (
-  <button className="p-1.5 hover:bg-[#282e39] rounded-md hover:text-white">
-    <span className="material-symbols-outlined text-lg">{icon}</span>
-  </button>
-);
-
-export default AdminUsersPage;
+}
